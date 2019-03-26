@@ -27,10 +27,10 @@ export class MovieApiService {
       const options = {headers: {'Content-Type': 'application/json'}};
       const url = 'http://www.omdbapi.com/?apikey=e165dea8&t=' + title + '&y=' + year;
       var data = {"Title": title, "Year": year};
-      this.http.post(`${API_URL}/movie`, JSON.stringify(data), options).subscribe(
+      this.http.post<JSON>(`${API_URL}/movie`, JSON.stringify(data), options).subscribe(
         (t:JSON) => console.info(JSON.stringify(t))
       );
-      return this.http.get(`${API_URL}/movie`)
+      return this.http.get(`${API_URL}/movie`, options)
         .pipe(
           catchError(this.handleError)
             );

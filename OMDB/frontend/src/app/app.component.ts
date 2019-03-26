@@ -2,6 +2,8 @@ import { Component,  OnInit, OnDestroy, ViewChild } from '@angular/core';
 import { Movie } from './movie/movie.model';
 import { MovieApiService } from './movie/movie-api-service';
 import { FormControl, FormGroup, NgForm } from '@angular/forms';
+import { Observable, EMPTY, throwError, Subscribable } from 'rxjs';
+
 
 
 
@@ -38,7 +40,7 @@ onSubmit(){
   
   //
   this.movieapiservice.searchMovie(this.title, this.year).subscribe(
-    (data: any) => {
+    (data) => {
       this.mov = data;
       console.log(this.mov);
     }

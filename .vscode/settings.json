@@ -1,5 +1,5 @@
 {
-    "python.pythonPath": "/home/frratstar/.local/share/virtualenvs/MovieDB-vOfZaY17/bin/python",
+    "python.pythonPath": "/usr/bin/python3",
     "python.linting.pylintEnabled": true,
     "python.linting.enabled": true
 }

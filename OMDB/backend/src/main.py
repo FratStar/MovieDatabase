@@ -13,7 +13,7 @@ CORS(app)
 db.create_all()
 
 global r
-
+global json_data
 
 def add_actor_data():
     json_data = r.json()
@@ -52,7 +52,6 @@ def add_directors():
     json_data = r.json()
     if json_data['Director'] != 'N/A':
         director_name = str(json_data['Director'])
-        print (director_name + "\n\n\n")
         exists = Directors.query.filter_by(name=director_name).scalar() is not None
         if not exists:
             director_data = Directors(director_name)
@@ -138,9 +137,7 @@ def add_movie_cast():
     ActorName = str(json_data['Actors'])
     ActorName = ActorName.split(', ')
     for a in ActorName:
-        print (a)
         ActorID = Actors.query.with_entities(Actors.id).filter_by(name=a)
-        print(ActorID)
         exists = Movie_Cast.query.filter_by(actors_id=ActorID).scalar() is not None
         if not exists:
             cast_data = Movie_Cast(Movie.query.with_entities(Movie.id).filter_by(title=json_data['Title'], year=json_data['Year']), Actors.query.with_entities(Actors.id).filter_by(name=a))
@@ -187,9 +184,8 @@ def add_movie_writer():
 def index():
    return render_template('index.html')
 
-@app.route('/movie')
+@app.route('/movie', methods=['GET'])
 def get_movie():
-    json_data = request.get_json()
     title = str(json_data['Title']) 
     year = str(json_data['Year'])
     title = urllib.parse.quote(title)
@@ -200,14 +196,13 @@ def get_movie():
 
 @app.route('/movie', methods=['POST'])
 def add_Movie():
+    global json_data
     json_data = request.get_json()
-    print (json_data, file=sys.stdout)
     title = str(json_data['Title'])
     year = str(json_data['Year'])
     title = urllib.parse.quote(title)
     global r
     r = requests.get(f'http://www.omdbapi.com/?t={title}&y={year}&apikey=e165dea8')
-    print (r.json(), file=sys.stdout)
     add_actor_data()
     add_writer_data()
     add_directors()        
@@ -218,7 +213,6 @@ def add_Movie():
     add_movie_cast()
     add_movie_genre()
     add_movie_writer()
-    return 'Success'
   
 if __name__ == '__main__':
     app.run(debug=True)

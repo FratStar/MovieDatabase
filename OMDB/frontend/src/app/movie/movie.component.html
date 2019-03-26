@@ -1,0 +1,11 @@
+<form [formGroup]="movieForm" (ngSubmit)="onSubmit()">
+  <label>
+    Movie Title:
+    <input type="text" formControlName="title">
+  </label>
+  <label>
+      Movie Year:
+      <input type="text" formControlName="year">
+    </label>
+    <button type ="submit" [disabled]="!movieForm.valid">Search</button>
+</form>

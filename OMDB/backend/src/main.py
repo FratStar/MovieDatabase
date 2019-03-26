@@ -1,5 +1,5 @@
-import requests, json, sys, ast, datetime, re
-from flask import Flask, render_template, jsonify, request
+import requests, json, sys, ast, datetime, re, urllib
+from flask import Flask, render_template, jsonify, request, make_response
 from flask_bootstrap import Bootstrap
 from flask_cors import CORS
 from .entities.Conn import db, app
@@ -12,8 +12,11 @@ CORS(app)
 
 db.create_all()
 
+global r
+
+
 def add_actor_data():
-    json_data = request.get_json()
+    json_data = r.json()
     exists = Movie.query.filter_by(title=json_data['Title']).scalar() is not None
     ActorName = str(json_data['Actors'])
     ActorName = ActorName.split(', ')
@@ -26,7 +29,7 @@ def add_actor_data():
             db.session.commit()
 
 def add_writer_data():
-    json_data = request.get_json()
+    json_data = r.json()
     WriterName = str(json_data['Writer'])
     result = WriterName.find(',')
     if result != -1:
@@ -46,7 +49,7 @@ def add_writer_data():
         db.session().commit()
 
 def add_directors():
-    json_data = request.get_json()
+    json_data = r.json()
     if json_data['Director'] != 'N/A':
         director_name = str(json_data['Director'])
         print (director_name + "\n\n\n")
@@ -57,7 +60,7 @@ def add_directors():
             db.session.commit()
 
 def add_studio():
-    json_data = request.get_json()
+    json_data = r.json()
     if json_data['Production'] != 'N/A':
         studio_name = str(json_data['Production'])
         exists = Studio.query.filter_by(studioname=studio_name).scalar() is not None
@@ -67,7 +70,7 @@ def add_studio():
             db.session.commit()
 
 def add_genres():
-    json_data = request.get_json()
+    json_data = r.json()
     genre_names = str(json_data['Genre'])
     result = genre_names.find(',')
     if result != -1:
@@ -84,7 +87,7 @@ def add_genres():
         db.session().commit()
 
 def add_mov():
-    json_data = request.get_json()
+    json_data = r.json()
     exists = Movie.query.filter_by(title=json_data['Title']).scalar() is not None # check if movie exist
     if not exists:
         title = str(json_data['Title'])
@@ -107,7 +110,7 @@ def add_mov():
         db.session.commit()
 
 def add_ratings():
-    json_data = request.get_json()
+    json_data = r.json()
     #Movieid = Movie.query.with_entities(Movie.id).filter_by(title=str(json_data['Title'])) # search for specific movie id to add to data base
     if json_data['Metascore']!='N/A':
         metascore = float(json_data['Metascore'])
@@ -131,7 +134,7 @@ def add_ratings():
         db.session.commit()
 
 def add_movie_cast():
-    json_data = request.get_json()
+    json_data = r.json()
     ActorName = str(json_data['Actors'])
     ActorName = ActorName.split(', ')
     for a in ActorName:
@@ -145,7 +148,7 @@ def add_movie_cast():
             db.session.commit()
 
 def add_movie_genre():
-    json_data = request.get_json()
+    json_data = r.json()
     genre_names = str(json_data['Genre'])
     result = genre_names.find(',')
     if result != -1:
@@ -155,15 +158,13 @@ def add_movie_genre():
             exists = Movie_Genres.query.filter_by(genre_id=GenreID).scalar() is not None
             if not exists:
                 genre_data = Movie_Genres(Movie.query.with_entities(Movie.id).filter_by(title=json_data['Title'], year=json_data['Year']),Genre.query.with_entities(Genre.id).filter_by(genre=gn))
-                db.session.add(genre_data)
-                db.session.commit()
+                db.sesson.add(genre_data)
+                db.sesson.commit()
     else:
         genre_data = Movie_Genres(Movie.query.with_entities(Movie.id).filter_by(title=json_data['Title'], year=json_data['Year']), Genre.query.with_entities(Genre.id).filter_by(genre=genre_names))
         db.session.add(genre_data)
-        db.session().commit()
-
 def add_movie_writer():
-    json_data = request.get_json()
+    json_data = r.json()
     WriterName = str(json_data['Writer'])
     result = WriterName.find(',')
     if result != -1:
@@ -188,14 +189,25 @@ def index():
 
 @app.route('/movie')
 def get_movie():
-    apikey = 'e165dea8'
-    r = requests.get(f"http://www.omdbapi.com/?t=Justice%20League&apikey={apikey}")
+    json_data = request.get_json()
+    title = str(json_data['Title']) 
+    year = str(json_data['Year'])
+    title = urllib.parse.quote(title)
+    r = requests.get(f'http://www.omdbapi.com/?t={title}&y={year}&apikey=e165dea8')
     data = r.json()
     #print(data, file=sys.stdout)
     return jsonify(data)
 
 @app.route('/movie', methods=['POST'])
 def add_Movie():
+    json_data = request.get_json()
+    print (json_data, file=sys.stdout)
+    title = str(json_data['Title'])
+    year = str(json_data['Year'])
+    title = urllib.parse.quote(title)
+    global r
+    r = requests.get(f'http://www.omdbapi.com/?t={title}&y={year}&apikey=e165dea8')
+    print (r.json(), file=sys.stdout)
     add_actor_data()
     add_writer_data()
     add_directors()        

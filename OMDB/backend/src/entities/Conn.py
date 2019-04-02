@@ -3,7 +3,7 @@ from flask import Flask
 from flask_sqlalchemy import SQLAlchemy
 #import flask.ext.whooshalchemy as wa
 
-
+#establishes connection to database and sets up a backend Flask application to serve as a means to connect to the DB
 
 dbuser = 'SA'
 dbpass = 'CIS-PASS2019'

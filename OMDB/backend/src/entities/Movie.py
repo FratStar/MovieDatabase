@@ -1,5 +1,7 @@
 from .Conn import db
 
+#Establishes table schema as classes and determines the methods that contains the data note the foreign keys it means there needs to be a specific order things are added to the database
+
 class Movie(db.Model):
     __tablename__ = 'movies'
     id = db.Column(db.Integer, primary_key=True)

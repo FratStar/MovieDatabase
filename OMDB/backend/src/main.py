@@ -10,7 +10,7 @@ from .entities.Movie import Movie, Ratings, Directors, Genre, Actors, Studio, Wr
 Bootstrap(app)
 CORS(app)
 
-db.create_all()
+db.create_all()     #Creates database and its tables (In this setup the db already exists but this just creates the tables anyway.)
 
 global r            #Creating global response variable to allow for data to be passed between each functions
 global json_data    #Creating global variable to hold json data so that it may be called requested once and use for all subsequent functions
@@ -197,10 +197,10 @@ def index():
 
 @app.route('/movie', methods=['GET'])
 def get_movie():
-    title = str(json_data['Title']) 
+    title = str(json_data['Title'])
     year = str(json_data['Year'])
     title = urllib.parse.quote(title)
-    r = requests.get(f'http://www.omdbapi.com/?t={title}&y={year}&apikey=e165dea8')
+    r = requests.get(f'http://www.omdbapi.com/?t={title}&y={year}&tomatoes=true&apikey=e165dea8')
     data = r.json()
     #print(data, file=sys.stdout)
     return jsonify(data)
@@ -213,7 +213,7 @@ def add_Movie():
     year = str(json_data['Year'])
     title = urllib.parse.quote(title)
     global r
-    r = requests.get(f'http://www.omdbapi.com/?t={title}&y={year}&apikey=e165dea8')
+    r = requests.get(f'http://www.omdbapi.com/?t={title}&y={year}&tomatoes=true&apikey=e165dea8')
     add_actor_data()
     add_writer_data()
     add_directors()        

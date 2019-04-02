@@ -19,12 +19,39 @@
 </div>
 
 
-<!--<ul>
-  <li *ngFor="let movie of mov">
-    {{movie.Title}}
-  </li>
-</ul>-->
+<div style="text-align:center" *ngIf="!mov">
+  <br>
+  Loading results....
+</div>
+<br>
+<br>
+<div *ngIf="mov">
+  <img [src]="mov.Poster == 'N/A' ? 'http://placehold.it/150x220&text=N/A' : mov.Poster ">
+  <span class="span-outer">
+    <br>
+    <a href="https://imdb.com/title{{mov.imdbID}}" target="_blank">{{ mov.Title }}</a>
+  </span>, {{ mov.Year }}
 
-<div style="text-align:center" *ngIf="mov">
-  {{ mov.Title }}
+  <p><strong>Released on:</strong>{{ mov.Released }} ({{ mov.Runtime }})</p>
+  <p>{{ mov.Plot }}</p>
+
+
+  <p class="outer-p-2">Ratings:
+    <br>
+    <strong>Metacritic</strong>: <span class="label label-success">{{ mov.Metascore }}</span>
+    <br>
+    <strong>IMDb Rating</strong>: <span class="label label-success">{{ mov.imdbRating }}</span>
+    <br>
+    <strong>Rotten Tomatoes</strong>: <span class="label label-success">{{ mov.Ratings[1].Value }}</span>
+  </p>
+
+  <p class="outer-p-3">
+      <a href="https://www.youtube.com/results?search_query={{ mov.Title }}" target="_blank" class="btn btn-default btn-xs btn-info">Watch Trailers!</a>
+      <span class="divider"></span>
+      <a href="http://subscene.com/subtitles/title?q={{ mov.Title }}" target="_blank" class="btn btn-default btn-xs btn-info">Get Subtitles!</a>
+      <span class="divider"></span>
+      <a href="http://www.theost.com/search/custom/?key={{ mov.Title }}" target="_blank" class="btn btn-default btn-xs btn-info">Hear Soundtracks!</a>
+      <span class="divider"></span>
+      <a href="http://www.amazon.in/s/ref=nb_sb_noss_1?url=search-alias%3Ddvd&field-keywords={{ mov.Title }}" target="_blank" class="btn btn-default btn-xs btn-info">Buy this movie!</a>
+  </p>
 </div>

@@ -1,9 +1,8 @@
 import { Injectable } from '@angular/core';
-import { HttpClient, HttpErrorResponse, HttpHeaders, HttpResponse } from '@angular/common/http';
-import { Observable, EMPTY, throwError } from 'rxjs';
-import { catchError, retry, map } from 'rxjs/operators';
+import { HttpClient, HttpErrorResponse, HttpHeaders } from '@angular/common/http';
+import { throwError } from 'rxjs';
+import { catchError } from 'rxjs/operators';
 import {API_URL} from '../env';
-import { Movie } from './movie.model'
 
 
 const httpOptions = {
@@ -28,7 +27,8 @@ export class MovieApiService {
       const url = 'http://www.omdbapi.com/?apikey=e165dea8&t=' + title + '&y=' + year;
       var data = {"Title": title, "Year": year};
       this.http.post<JSON>(`${API_URL}/movie`, JSON.stringify(data), options).subscribe(
-        (t:JSON) => console.info(JSON.stringify(t))
+        (data) => { console.info(data)
+        }
       );
       return this.http.get(`${API_URL}/movie`, options)
         .pipe(
@@ -52,32 +52,6 @@ export class MovieApiService {
         return throwError(
           'Something bad happened; please try again later.');
       };
-
-    /*  private handleError(error: HttpErrorResponse) {
-        let errorMessage = '';
-        if (error.error instanceof ErrorEvent) {
-          // client-side error
-          errorMessage = `Error: ${error.error.message}`;
-        } else {
-          // server-side error
-          errorMessage = `Error Code: ${error.status}\nMessage: ${error.message}`;
-        }
-        window.alert(errorMessage);
-        return throwError(errorMessage);
-      }*/
-
-    /*getMovies() {
-        return this.http.get<Movie[]>(`${API_URL}/movie`)
-            .pipe(
-                catchError(this.handleError)
-            );
-        }
-    addMovies(Movie: Movie){
-        return this.http.post<Movie>(`${API_URL}/movie`, Movie, httpOptions)
-            .pipe(
-                catchError(this.handleError)
-            );
-    }*/
     
 }
 

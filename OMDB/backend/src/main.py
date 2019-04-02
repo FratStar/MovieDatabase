@@ -12,18 +12,17 @@ CORS(app)
 
 db.create_all()
 
-global r
-global json_data
+global r            #Creating global response variable to allow for data to be passed between each functions
+global json_data    #Creating global variable to hold json data so that it may be called requested once and use for all subsequent functions
 
-def add_actor_data():
-    json_data = r.json()
-    exists = Movie.query.filter_by(title=json_data['Title']).scalar() is not None
-    ActorName = str(json_data['Actors'])
-    ActorName = ActorName.split(', ')
+def add_actor_data(): 
+    json_data = r.json() #assigns json response to global variable
+    exists = Movie.query.filter_by(title=json_data['Title']).scalar() is not None #querys database and determines if the movie title is there (scalar does the check) not really doing anything in this artifact of iterating the code can delete
+    ActorName = str(json_data['Actors']) #transforms json response into string data type to be manipulated by string functions
+    ActorName = ActorName.split(', ') #There isn't a scenario in a movie where there is a single actor so data is spliut into a string array
     for a in ActorName:
-        exists = Actors.query.filter_by(name=a).scalar() is not None
+        exists = Actors.query.filter_by(name=a).scalar() is not None  #Checks database for the the actor's name  if it isn't there add it to the data base if not do not add them to the data base.
         if not exists:
-            global actor_data   
             actor_data = Actors(a)
             db.session.add(actor_data)
             db.session.commit()
@@ -31,24 +30,24 @@ def add_actor_data():
 def add_writer_data():
     json_data = r.json()
     WriterName = str(json_data['Writer'])
-    result = WriterName.find(',')
+    result = WriterName.find(',') #Searches comma for multiple writers.
     if result != -1:
-        WriterName = WriterName.split(', ')
+        WriterName = WriterName.split(', ') # if there us a comma split the writers into an array
         for w in WriterName:
-            w = re.sub(r" ?\([^)]+\)", "", w)
-            exists = Writer.query.filter_by(name=w).scalar() is not None
+            w = re.sub(r" ?\([^)]+\)", "", w) #take said array and remove any text that is in a paretheseis etc. We just wnat the name
+            exists = Writer.query.filter_by(name=w).scalar() is not None # checks to see if writer name exists adds then adds it to the db if it doesn't exist
             if not exists:
-                global writer_data 
                 writer_data = Writer(w)
                 db.session.add(writer_data)
                 db.session().commit()
-    else:
+    else:   #takes if there is a single writer take the name remove any unnecessary carachters and add to db
         WriterName = str(json_data['Writer'])
+        WriterName = re.sub(r" ?\([^)]+\)", "", WriterName)
         writer_data = Writer(WriterName)
         db.session.add(writer_data)
         db.session().commit()
 
-def add_directors():
+def add_directors(): #same process as actors
     json_data = r.json()
     if json_data['Director'] != 'N/A':
         director_name = str(json_data['Director'])
@@ -58,7 +57,7 @@ def add_directors():
             db.session.add(director_data)
             db.session.commit()
 
-def add_studio():
+def add_studio():#same process as actors
     json_data = r.json()
     if json_data['Production'] != 'N/A':
         studio_name = str(json_data['Production'])
@@ -68,7 +67,7 @@ def add_studio():
             db.session.add(studio_data)
             db.session.commit()
 
-def add_genres():
+def add_genres(): #same process as writers minus the regular expressions
     json_data = r.json()
     genre_names = str(json_data['Genre'])
     result = genre_names.find(',')
@@ -103,7 +102,6 @@ def add_mov():
         if json_data['Country']!='N/A':
             country = str(json_data['Country'].split(', ')[0])
         plot = str(json_data['Plot'])
-        global movie_data
         movie_data = Movie(title, year, runtime, lang, rel_dt.date(), country, plot, Directors.query.with_entities(Directors.id).filter_by(name=str(json_data['Director'])), Studio.query.with_entities(Studio.id).filter_by(studioname=str(json_data['Production'])))
         db.session.add(movie_data)
         db.session.commit()
@@ -113,24 +111,30 @@ def add_ratings():
     #Movieid = Movie.query.with_entities(Movie.id).filter_by(title=str(json_data['Title'])) # search for specific movie id to add to data base
     if json_data['Metascore']!='N/A':
         metascore = float(json_data['Metascore'])
-        rating_data = Ratings(Movie.query.with_entities(Movie.id).filter_by(title=str(json_data['Title'])),'Metacritic',metascore)
+        rating_data = Ratings(Movie.query.with_entities(Movie.id).filter_by(title=str(json_data['Title'])),'Metacritic',metascore)  #added metacritic score to database while grabbing movie id from the Movies tables
         db.session.add(rating_data)
         db.session.commit()
+
     else:
         metascore=-1
-        rating_data = Ratings(Movie.query.with_entities(Movie.id).filter_by(title=str(json_data['Title'])),'Metacritic',metascore)
+        rating_data = Ratings(Movie.query.with_entities(Movie.id).filter_by(title=str(json_data['Title'])),'Metacritic',metascore) #if there is no meta score assign it to -1. We don't anticipate a situation where this will ever be true but we have to hanlde it nonetheless
         db.session.add(rating_data)
         db.session.commit()
+
     if json_data['imdbRating']!='N/A':
         imdb_rating = float(json_data['imdbRating'])
         rating_data = Ratings(Movie.query.with_entities(Movie.id).filter_by(title=json_data['Title']),'IMDB',imdb_rating)
         db.session.add(rating_data)
         db.session.commit()
+
     else:
         imdb_rating=-1
         rating_data = Ratings(Movie.query.with_entities(Movie.id).filter_by(title=json_data['Title']),'IMDB',imdb_rating)
         db.session.add(rating_data)
         db.session.commit()
+
+
+#this function looks at actors and the movie id in the movie cast tables and if that combination is not there they are added to the table
 
 def add_movie_cast():
     json_data = r.json()
@@ -144,6 +148,8 @@ def add_movie_cast():
             db.session.add(cast_data)
             db.session.commit()
 
+#this function looks at genre id and the movie id in the movie cast tables and if that combination is not there they are added to the table
+
 def add_movie_genre():
     json_data = r.json()
     genre_names = str(json_data['Genre'])
@@ -154,12 +160,15 @@ def add_movie_genre():
             GenreID = Genre.query.with_entities(Genre.id).filter_by(genre=gn)
             exists = Movie_Genres.query.filter_by(genre_id=GenreID).scalar() is not None
             if not exists:
-                genre_data = Movie_Genres(Movie.query.with_entities(Movie.id).filter_by(title=json_data['Title'], year=json_data['Year']),Genre.query.with_entities(Genre.id).filter_by(genre=gn))
+                genre_data = Movie_Genres(Movie.query.with_entities(Movie.id).filter_by(title=json_data['ll until you have the real object by adding something likitle'], year=json_data['Year']),Genre.query.with_entities(Genre.id).filter_by(genre=gn))
                 db.sesson.add(genre_data)
                 db.sesson.commit()
     else:
         genre_data = Movie_Genres(Movie.query.with_entities(Movie.id).filter_by(title=json_data['Title'], year=json_data['Year']), Genre.query.with_entities(Genre.id).filter_by(genre=genre_names))
         db.session.add(genre_data)
+
+#this function looks at writer id and the movie id in the movie cast tables and if that combination is not there they are added to the table
+         
 def add_movie_writer():
     json_data = r.json()
     WriterName = str(json_data['Writer'])
@@ -180,6 +189,8 @@ def add_movie_writer():
         db.session.add(writer_data)
         db.session.commit()
 
+
+#rest api paths / is basically useless, but /movie takes in two methods get and post. Post methods trigger population of the table after pulling data from the api, get methods pulls the data from the api and that's it
 @app.route('/')
 def index():
    return render_template('index.html')
@@ -213,6 +224,7 @@ def add_Movie():
     add_movie_cast()
     add_movie_genre()
     add_movie_writer()
+    return 'Sucess'
   
 if __name__ == '__main__':
     app.run(debug=True)

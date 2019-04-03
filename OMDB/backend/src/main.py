@@ -174,6 +174,7 @@ def add_movie_country():
                     db.session.add(country_data)
                     db.session().commit()
         else:
+            CountryID = Release_Country.query.with_entities(Release_Country.id).filter_by(name=country_names)
             exists = Movie_Rel_Country.query.filter_by(country_id=CountryID, movies_id=MovieID).scalar() is not None
             if not exists:
                     country_data = Movie_Rel_Country(Movie.query.with_entities(Movie.id).filter_by(title=json_data['Title'], year=json_data['Year']), Release_Country.query.with_entities(Release_Country.id).filter_by(name=country_names))
@@ -217,7 +218,7 @@ def add_movie_lang():
                     db.session.add(lang_data)
                     db.session.commit()
         else:
-            LangID = Lang.query.with_entities(Lang.id).filter_by(language=ln)
+            LangID = Lang.query.with_entities(Lang.id).filter_by(language=lang_names)
             exists = Movie_Lang.query.filter_by(language_id=LangID, movies_id=MovieID).scalar() is not None
             if not exists:
                 lang_data = Movie_Lang(Movie.query.with_entities(Movie.id).filter_by(title=json_data['Title'], year=json_data['Year']), Lang.query.with_entities(Lang.id).filter_by(language=lang_names))

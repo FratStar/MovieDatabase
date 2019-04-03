@@ -8,9 +8,9 @@ class Movie(db.Model):
     title = db.Column(db.String(200), nullable=False)
     year = db.Column(db.Integer, nullable=False)
     runtime = db.Column(db.Integer, nullable=False)
-    lang = db.Column(db.String(85), )
+    #lang = db.Column(db.String(85))
     mov_rel_dt = db.Column(db.Date, nullable=False)
-    mov_rel_country = db.Column(db.String(74))
+    #mov_rel_country = db.Column(db.String(74))
     mov_plot = db.Column(db.String(450))
     director_id = db.Column(db.Integer, db.ForeignKey('directors.id'))
     studio_id = db.Column(db.Integer, db.ForeignKey('studio.id'))
@@ -18,16 +18,19 @@ class Movie(db.Model):
     Cast = db.relationship('Actors', secondary='movie_cast' )
     mov_writers = db.relationship('Writer', secondary='movie_writers')
     mov_genres = db.relationship('Genre', secondary='movie_genres' )
-    def __init__(self, title, year, runtime, lang, mov_rel_dt, mov_rel_country, mov_plot, director_id, studio_id):
+    languages = db.relationship('Lang', secondary='movie_lang')
+    countries = db.relationship('Release_Country', secondary = 'movie_release_country')
+    def __init__(self, title, year, runtime, mov_rel_dt, mov_plot, director_id, studio_id):
         self.title = title
         self.year = year
         self.runtime = runtime
-        self.lang = lang
+        #self.lang = lang
         self.mov_rel_dt = mov_rel_dt
-        self.mov_rel_country = mov_rel_country
+        #self.mov_rel_country = mov_rel_country
         self.mov_plot = mov_plot
         self.director_id = director_id
         self.studio_id = studio_id
+
 
 
 class Directors(db.Model):
@@ -115,4 +118,38 @@ class Movie_Genres(db.Model):
         self.movies_id = movies_id
         self.genre_id = genre_id
 
+class Release_Country(db.Model):
+    __tablename__ = 'country'
+    id = db.Column(db.Integer, primary_key=True)
+    name = db.Column(db.String(74))
+    def __init__(self, name):
+        self.name = name
 
+class Movie_Rel_Country(db.Model):
+    __tablename__ = 'movie_release_country'
+    id = db.Column(db.Integer, primary_key=True)
+    movies_id = db.Column(db.Integer, db.ForeignKey('movies.id'))
+    country_id = db.Column(db.Integer,db.ForeignKey('country.id'))
+    movie = db.relationship(Movie, backref=db.backref('movie_release_country', cascade="all, delete-orphan"))
+    country = db.relationship(Release_Country, backref=db.backref('movie_release_country', cascade="all, delete-orphan"))
+    def __init__(self, movies_id, country_id):
+        self.movies_id = movies_id
+        self.country_id = country_id
+
+class Lang(db.Model):
+    __tablename__ = 'language'
+    id = db.Column(db.Integer, primary_key=True)
+    language = db.Column(db.String(85), nullable=False)
+    def __init__(self, language):
+        self.language = language
+
+class Movie_Lang(db.Model):
+    __tablename__ = 'movie_lang'
+    id = db.Column(db.Integer, primary_key=True)
+    movies_id = db.Column(db.Integer, db.ForeignKey('movies.id'))
+    language_id = db.Column(db.Integer, db.ForeignKey('language.id'))
+    movie = db.relationship(Movie, backref=db.backref('movie_lang', cascade="all, delete-orphan"))
+    lang = db.relationship(Lang, backref=db.backref('movie_lang', cascade="all, delete-orphan"))
+    def __init__(self, movies_id, language_id):
+        self.movies_id = movies_id
+        self.language_id = language_id

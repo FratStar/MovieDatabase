@@ -37,8 +37,8 @@ export class MovieComponent implements OnInit {
     (data) => {
       this.mov = data;
       var response = JSON.stringify(data);
-     console.log(this.mov.Title);
-     console.log(this.mov.Response);
+     //console.log(this.mov.Title);
+     //console.log(this.mov.Response);
      console.log(this.mov);
      //console.log(response);
     }

@@ -8,12 +8,10 @@ class Movie(db.Model):
     title = db.Column(db.String(200), nullable=False)
     year = db.Column(db.Integer, nullable=False)
     runtime = db.Column(db.Integer, nullable=False)
-    #lang = db.Column(db.String(85))
     mov_rel_dt = db.Column(db.Date, nullable=False)
-    #mov_rel_country = db.Column(db.String(74))
     mov_plot = db.Column(db.String(450))
-    director_id = db.Column(db.Integer, db.ForeignKey('directors.id'))
-    studio_id = db.Column(db.Integer, db.ForeignKey('studio.id'))
+    director_id = db.Column(db.Integer, db.ForeignKey('directors.id'), nullable=False)
+    studio_id = db.Column(db.Integer, db.ForeignKey('studio.id'), nullable=False)
     ratings = db.relationship('Ratings', backref='Movie', lazy=True)
     Cast = db.relationship('Actors', secondary='movie_cast' )
     mov_writers = db.relationship('Writer', secondary='movie_writers')
@@ -24,9 +22,7 @@ class Movie(db.Model):
         self.title = title
         self.year = year
         self.runtime = runtime
-        #self.lang = lang
         self.mov_rel_dt = mov_rel_dt
-        #self.mov_rel_country = mov_rel_country
         self.mov_plot = mov_plot
         self.director_id = director_id
         self.studio_id = studio_id
@@ -37,7 +33,7 @@ class Directors(db.Model):
     __tablename__ = 'directors'
     id = db.Column(db.Integer, primary_key=True)
     name = db.Column(db.String(50), unique=True, nullable=False)
-    moviesd = db.relationship('Movie', backref='director',lazy=True)
+    moviesd = db.relationship('Movie', backref='directors',lazy='dynamic')
     def __init__(self, name):
         self.name = name
 
@@ -61,7 +57,7 @@ class Studio(db.Model):
     __tablename__ = 'studio'
     id = db.Column(db.Integer, primary_key=True)
     studioname = db.Column(db.String(50), unique=True, nullable=False)
-    moviess = db.relationship('Movie', backref='prod')
+    moviess = db.relationship('Movie', backref='studio', lazy='dynamic')
     def __init__(self, studioname):
         self.studioname = studioname
 

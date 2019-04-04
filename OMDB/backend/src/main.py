@@ -64,11 +64,21 @@ def add_studio():#same process as actors
     json_data = r.json()
     if json_data['Production'] != 'N/A':
         studio_name = str(json_data['Production'])
-        exists = Studio.query.filter_by(studioname=studio_name).scalar() is not None
-        if not exists:
-            studio_data = Studio(studio_name)
-            db.session.add(studio_data)
-            db.session.commit()
+        result = studio_name.find('/')
+        if result != -1:
+            studio_name = studio_name.split('/')
+            for sn in studio_name:
+                exists = Studio.query.filter_by(studioname=sn).scalar() is not None
+                if not exists:
+                    studio_data = Studio(sn)
+                    db.session.add(studio_data)
+                    db.session.commit()
+        else:
+            exists = Studio.query.filter_by(studioname=studio_name).scalar() is not None
+            if not exists:
+                studio_data = Studio(studio_name)
+                db.session.add(studio_data)
+                db.session.commit()
 
 def add_genres(): #same process as writers minus the regular expressions
     json_data = r.json()
@@ -91,52 +101,87 @@ def add_genres(): #same process as writers minus the regular expressions
 
 def add_mov():
     json_data = r.json()
-    exists = Movie.query.filter_by(title=json_data['Title']).scalar() is not None # check if movie exist
+    exists = Movie.query.filter_by(title=str(json_data['Title'])).scalar() is not None # check if movie exist
+    
     if not exists:
         title = str(json_data['Title'])
         # Goes through the json dataset and extracts information if it is available
         if json_data['Year']!='N/A':
             year = int(json_data['Year'])
+
         if json_data['Runtime']!='N/A':
             runtime = int(json_data['Runtime'].split()[0])
-     #   if json_data['Language']!='N/A':
-      #      lang = str(json_data['Language'].split(', ')[0])
+
         if json_data['Released']!='N/A':
             rel_dt = json_data['Released']
             rel_dt = datetime.datetime.strptime(rel_dt, '%d %b %Y')
-      #  if json_data['Country']!='N/A':
-       #     country = str(json_data['Country'].split(', ')[0])
+
         plot = str(json_data['Plot'])
-        movie_data = Movie(title, year, runtime, rel_dt.date(), plot, Directors.query.with_entities(Directors.id).filter_by(name=str(json_data['Director'])), Studio.query.with_entities(Studio.id).filter_by(studioname=str(json_data['Production'])))
+        stdName = json_data['Production']
+        dirName = json_data['Director']
+        DirectorsID = Directors.query.filter_by(name=dirName).first()
+        StudioID = Studio.query.filter_by(studioname=stdName).first()
+
+        
+        movie_data = Movie(title, year, runtime, rel_dt.date(), plot, DirectorsID.id, StudioID.id )
         db.session.add(movie_data)
         db.session.commit()
 
 def add_ratings():
     json_data = r.json()
     #Movieid = Movie.query.with_entities(Movie.id).filter_by(title=str(json_data['Title'])) # search for specific movie id to add to data base
-    if json_data['Metascore']!='N/A':
-        metascore = float(json_data['Metascore'])
-        rating_data = Ratings(Movie.query.with_entities(Movie.id).filter_by(title=str(json_data['Title'])),'Metacritic',metascore)  #added metacritic score to database while grabbing movie id from the Movies tables
-        db.session.add(rating_data)
-        db.session.commit()
+    MovieID = Movie.query.with_entities(Movie.id).filter_by(title=json_data['Title'], year=json_data['Year'])
+    rData = json_data['Ratings']
+    for rates in rData:
+        if rates['Source'] == 'Internet Movie Database':
+            if rates['Value']!='N/A':
+                exists = Ratings.query.with_entities(Ratings.id, Ratings.movie_id).filter_by(outlet='IMDB', movie_id=MovieID).scalar()
+                if not exists:
+                    imdbrating = float(json_data['imdbRating'])
+                    rating_data = Ratings(Movie.query.with_entities(Movie.id).filter_by(title=str(json_data['Title'])),'IMDB',imdbrating)  #added metacritic score to database while grabbing movie id from the Movies tables
+                    db.session.add(rating_data)
+                    db.session.commit()
+            else:
+                exists = Ratings.query.with_entities(Ratings.id, Ratings.movie_id).filter_by(outlet='IMDB', movie_id=MovieID).scalar()
+                if not exists:
+                    imdbrating=-1
+                    rating_data = Ratings(Movie.query.with_entities(Movie.id).filter_by(title=str(json_data['Title'])),'IMDB',imdbrating) #if there is no meta score assign it to -1. We don't anticipate a situation where this will ever be true but we have to hanlde it nonetheless
+                    db.session.add(rating_data)
+                    db.session.commit()
 
-    else:
-        metascore=-1
-        rating_data = Ratings(Movie.query.with_entities(Movie.id).filter_by(title=str(json_data['Title'])),'Metacritic',metascore) #if there is no meta score assign it to -1. We don't anticipate a situation where this will ever be true but we have to hanlde it nonetheless
-        db.session.add(rating_data)
-        db.session.commit()
+        if rates['Source'] == 'Rotten Tomatoes':
+            if rates['Value']!='N/A':
+                exists = Ratings.query.with_entities(Ratings.id, Ratings.movie_id).filter_by(outlet='Rotten Tomatoes', movie_id=MovieID).scalar()
+                if not exists:
+                    tomatoscore = float(re.sub('%', "", rates['Value']))
+                    print(tomatoscore, file=sys.stdout)
+                    rating_data = Ratings(Movie.query.with_entities(Movie.id).filter_by(title=str(json_data['Title'])),'Rotten Tomatoes',tomatoscore)  #added metacritic score to database while grabbing movie id from the Movies tables
+                    db.session.add(rating_data)
+                    db.session.commit()
 
-    if json_data['imdbRating']!='N/A':
-        imdb_rating = float(json_data['imdbRating'])
-        rating_data = Ratings(Movie.query.with_entities(Movie.id).filter_by(title=json_data['Title']),'IMDB',imdb_rating)
-        db.session.add(rating_data)
-        db.session.commit()
-
-    else:
-        imdb_rating=-1
-        rating_data = Ratings(Movie.query.with_entities(Movie.id).filter_by(title=json_data['Title']),'IMDB',imdb_rating)
-        db.session.add(rating_data)
-        db.session.commit()
+            else:
+                exists = Ratings.query.with_entities(Ratings.id, Ratings.movie_id).filter_by(outlet='Rotten Tomatoes', movie_id=MovieID).scalar()
+                if not exists:
+                    tomatoscore = -1
+                    rating_data = Ratings(Movie.query.with_entities(Movie.id).filter_by(title=str(json_data['Title'])),'Rotten Tomatoes',tomatoscore)  #added metacritic score to database while grabbing movie id from the Movies tables
+                    db.session.add(rating_data)
+                    db.session.commit()
+                    
+        if rates['Source'] == 'Metacritic':
+            if rates['Value']!='N/A':
+                exists = Ratings.query.with_entities(Ratings.id, Ratings.movie_id).filter_by(outlet='Metacritic', movie_id=MovieID).scalar()
+                if not exists:
+                    metascore = float(json_data['Metascore'])
+                    rating_data = Ratings(Movie.query.with_entities(Movie.id).filter_by(title=str(json_data['Title'])),'Metacritic',metascore)  #added metacritic score to database while grabbing movie id from the Movies tables
+                    db.session.add(rating_data)
+                    db.session.commit()
+            else:
+                exists = Ratings.query.with_entities(Ratings.id, Ratings.movie_id).filter_by(outlet='Metacritic', movie_id=MovieID).scalar()
+                if not exists:
+                    metascore=-1
+                    rating_data = Ratings(Movie.query.with_entities(Movie.id).filter_by(title=str(json_data['Title'])),'Metacritic',metascore) #if there is no meta score assign it to -1. We don't anticipate a situation where this will ever be true but we have to hanlde it nonetheless
+                    db.session.add(rating_data)
+                    db.session.commit()
 
 def add_country():
     json_data = r.json()
@@ -299,10 +344,13 @@ def index():
 
 @app.route('/movie', methods=['GET'])
 def get_movie():
+    global json_data
+    global r
+    json_data = request.get_json()
     title = str(json_data['Title'])
     year = str(json_data['Year'])
     title = urllib.parse.quote(title)
-    r = requests.get(f'http://www.omdbapi.com/?t={title}&y={year}&tomatoes=true&apikey=e165dea8')
+    r = requests.get(f'http://www.omdbapi.com/?t={title}&y={year}&tomatoes=True&apikey=e165dea8')
     data = r.json()
     #print(data, file=sys.stdout)
     return jsonify(data)
@@ -310,20 +358,19 @@ def get_movie():
 @app.route('/movie', methods=['POST'])
 def add_Movie():
     global json_data
+    global r
     json_data = request.get_json()
     title = str(json_data['Title'])
     year = str(json_data['Year'])
     title = urllib.parse.quote(title)
-    global r
-    r = requests.get(f'http://www.omdbapi.com/?t={title}&y={year}&tomatoes=true&apikey=e165dea8')
+    r = requests.get(f'http://www.omdbapi.com/?t={title}&y={year}&tomatoes=True&apikey=e165dea8')
+    add_directors()
+    add_studio()
     add_actor_data()
     add_writer_data()
-    add_directors()        
-    add_studio()
     add_genres()
     add_language()
-    add_country()        
-    add_mov()
+    add_country()
     add_mov()
     add_ratings()
     add_movie_cast()

@@ -24,7 +24,7 @@ export class MovieApiService {
 
     searchMovie(title: string, year: string){
       const options = {headers: {'Content-Type': 'application/json'}};
-      const url = 'http://www.omdbapi.com/?apikey=e165dea8&t=' + title + '&y=' + year + '&tomatoes=true';
+      const url = 'http://www.omdbapi.com/?apikey=e165dea8&t=' + title + '&y=' + year + '&tomatoes=True';
       var data = {"Title": title, "Year": year};
       this.http.post<JSON>(`${API_URL}/movie`, JSON.stringify(data), options).subscribe(
         (data) => { console.info(data)

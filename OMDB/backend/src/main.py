@@ -3,7 +3,7 @@ from flask import Flask, render_template, jsonify, request, make_response
 from flask_bootstrap import Bootstrap
 from flask_cors import CORS
 from .entities.Conn import db, app
-from .entities.Movie import Movie, Ratings, Directors, Genre, Actors, Studio, Writer, Lang, Release_Country, Movie_Cast, Movie_Genres, Movie_Writers, Movie_Lang, Movie_Rel_Country
+from .entities.Movie import Movie, Ratings, Directors, Genre, Actors, Studio, Writer, Lang, Release_Country, Movie_Cast, Movie_Genres, Movie_Writers, Movie_Lang, Movie_Rel_Country, Movie_Studio
 
 
 
@@ -28,7 +28,6 @@ def add_actor_data():
             db.session.commit()
 
 def add_writer_data():    
-    add_mov()
     json_data = r.json()
     WriterName = str(json_data['Writer'])
     result = WriterName.find(',') #Searches comma for multiple writers.
@@ -117,13 +116,10 @@ def add_mov():
             rel_dt = datetime.datetime.strptime(rel_dt, '%d %b %Y')
 
         plot = str(json_data['Plot'])
-        stdName = json_data['Production']
         dirName = json_data['Director']
         DirectorsID = Directors.query.filter_by(name=dirName).first()
-        StudioID = Studio.query.filter_by(studioname=stdName).first()
-
         
-        movie_data = Movie(title, year, runtime, rel_dt.date(), plot, DirectorsID.id, StudioID.id )
+        movie_data = Movie(title, year, runtime, rel_dt.date(), plot, DirectorsID.id)
         db.session.add(movie_data)
         db.session.commit()
 
@@ -154,7 +150,7 @@ def add_ratings():
                 exists = Ratings.query.with_entities(Ratings.id, Ratings.movie_id).filter_by(outlet='Rotten Tomatoes', movie_id=MovieID).scalar()
                 if not exists:
                     tomatoscore = float(re.sub('%', "", rates['Value']))
-                    print(tomatoscore, file=sys.stdout)
+                    #print(tomatoscore, file=sys.stdout)
                     rating_data = Ratings(Movie.query.with_entities(Movie.id).filter_by(title=str(json_data['Title'])),'Rotten Tomatoes',tomatoscore)  #added metacritic score to database while grabbing movie id from the Movies tables
                     db.session.add(rating_data)
                     db.session.commit()
@@ -225,7 +221,6 @@ def add_movie_country():
                     country_data = Movie_Rel_Country(Movie.query.with_entities(Movie.id).filter_by(title=json_data['Title'], year=json_data['Year']), Release_Country.query.with_entities(Release_Country.id).filter_by(name=country_names))
                     db.session.add(country_data)
                     db.session().commit()
-
 
 def add_language():
     json_data = r.json()
@@ -336,6 +331,30 @@ def add_movie_writer():
             db.session.add(writer_data)
             db.session.commit()
 
+def add_movie_studio():
+    json_data = r.json()
+    if json_data['Production'] != 'N/A':
+        studio_name = str(json_data['Production'])
+        result = studio_name.find('/')
+        MovieID = Movie.query.with_entities(Movie.id).filter_by(title=json_data['Title'], year=json_data['Year'])
+        if result != -1:
+            studio_name = studio_name.split('/')
+            for sn in studio_name:
+                StudioID = Studio.query.filter_by(studioname=sn).first()
+                #print (StudioID.id, file=sys.stdout)
+                exists = Movie_Studio.query.filter_by(studio_id=StudioID.id, movies_id=MovieID).scalar() is not None
+                if not exists:
+                    studio_data = Movie_Studio(MovieID, StudioID.id)
+                    db.session.add(studio_data)
+                    db.session.commit()
+        else:
+            StudioID = Studio.query.filter_by(studioname=studio_name).first()
+            exists = Movie_Studio.query.filter_by(studio_id=StudioID.id, movies_id=MovieID).scalar() is not None
+            if not exists:
+                studio_data = Movie_Studio(MovieID, StudioID.id)
+                db.session.add(studio_data)
+                db.session.commit()
+
 
 #rest api paths / is basically useless, but /movie takes in two methods get and post. Post methods trigger population of the table after pulling data from the api, get methods pulls the data from the api and that's it
 @app.route('/')
@@ -344,15 +363,13 @@ def index():
 
 @app.route('/movie', methods=['GET'])
 def get_movie():
-    global json_data
-    global r
-    json_data = request.get_json()
     title = str(json_data['Title'])
     year = str(json_data['Year'])
     title = urllib.parse.quote(title)
-    r = requests.get(f'http://www.omdbapi.com/?t={title}&y={year}&tomatoes=True&apikey=e165dea8')
+    r = requests.get(f'https://www.omdbapi.com/?t={title}&y={year}&tomatoes=True&apikey=e165dea8')
     data = r.json()
     #print(data, file=sys.stdout)
+    #print (jsonify(data), file=sys.stdout)
     return jsonify(data)
 
 @app.route('/movie', methods=['POST'])
@@ -363,13 +380,13 @@ def add_Movie():
     title = str(json_data['Title'])
     year = str(json_data['Year'])
     title = urllib.parse.quote(title)
-    r = requests.get(f'http://www.omdbapi.com/?t={title}&y={year}&tomatoes=True&apikey=e165dea8')
+    r = requests.get(f'https://www.omdbapi.com/?t={title}&y={year}&tomatoes=True&apikey=e165dea8')
     add_directors()
     add_studio()
     add_actor_data()
     add_writer_data()
-    add_genres()
     add_language()
+    add_genres()
     add_country()
     add_mov()
     add_ratings()
@@ -378,7 +395,9 @@ def add_Movie():
     add_movie_writer()
     add_movie_country()
     add_movie_lang()
-    return 'Sucess'
+    add_movie_studio()
+    return jsonify(r.json()), 201
   
 if __name__ == '__main__':
     app.run(debug=True)
+

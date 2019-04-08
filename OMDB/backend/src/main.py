@@ -16,6 +16,10 @@ global r            #Creating global response variable to allow for data to be p
 r = None
 global json_data    #Creating global variable to hold json data so that it may be called requested once and use for all subsequent functions
 json_data = None
+global title
+title = None
+global year
+year = None
 
 def add_actor_data(): 
     json_data = r.json() #assigns json response to global variable
@@ -405,11 +409,18 @@ def index():
 
 @app.route('/movie', methods=['GET'])
 def get_movie():
-    global r
+    
+    global title
     title = json_data['Title']
-    year = json_data['Year']
     title = urllib.parse.quote(title)
+
+    global year
+    year = json_data['Year']
+    
+
+    global r
     r = requests.get(f'https://www.omdbapi.com/?t={title}&y={year}&tomatoes=True&apikey=e165dea8')
+    
     data = r.json()
     #print(data, file=sys.stdout)
     #print (jsonify(data), file=sys.stdout)
@@ -418,12 +429,18 @@ def get_movie():
 @app.route('/movie', methods=['POST'])
 def add_Movie():
     global json_data
-    global r
     json_data = request.get_json()
+
+    global title
     title = json_data['Title']
-    year = json_data['Year']
     title = urllib.parse.quote(title)
+
+    global year
+    year = json_data['Year']
+
+    global r
     r = requests.post(f'https://www.omdbapi.com/?t={title}&y={year}&tomatoes=True&apikey=e165dea8')
+
     add_directors()
     add_studio()
     add_actor_data()

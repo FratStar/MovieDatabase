@@ -198,7 +198,7 @@ def add_country():
     json_data = r.json()
     if json_data['Country']!='N/A':
         country_names = str(json_data['Country'])
-        print (country_names, file=sys.stdout)
+        #print (country_names, file=sys.stdout) # Debug code
         result = country_names.find(',')
         if result != -1:
             country_names = country_names.split(', ')

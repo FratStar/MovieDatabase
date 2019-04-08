@@ -3,7 +3,7 @@ from flask import Flask, render_template, jsonify, request, make_response
 from flask_bootstrap import Bootstrap
 from flask_cors import CORS
 from .entities.Conn import db, app
-from .entities.Movie import Movie, Ratings, Directors, Genre, Actors, Studio, Writer, Lang, Release_Country, Movie_Cast, Movie_Genres, Movie_Writers, Movie_Lang, Movie_Rel_Country, Movie_Studio
+from .entities.Movie import Movie, Ratings, Directors, Genre, Actors, Studio, Writer, Lang, Release_Country, Movie_Cast, Movie_Genres, Movie_Writers, Movie_Lang, Movie_Rel_Country, Movie_Studio, Movie_Directors
 
 
 
@@ -13,7 +13,9 @@ CORS(app)
 db.create_all()     #Creates database and its tables (In this setup the db already exists but this just creates the tables anyway.)
 
 global r            #Creating global response variable to allow for data to be passed between each functions
+r = None
 global json_data    #Creating global variable to hold json data so that it may be called requested once and use for all subsequent functions
+json_data = None
 
 def add_actor_data(): 
     json_data = r.json() #assigns json response to global variable
@@ -32,9 +34,11 @@ def add_writer_data():
     WriterName = str(json_data['Writer'])
     result = WriterName.find(',') #Searches comma for multiple writers.
     if result != -1:
+        nb_rep = 1
+        while (nb_rep): # ran into some issues json_data = request.get_json()ith nexted parenthesies 
+            (WriterName, nb_rep) = re.subn(r'\([^()]*\)', '', WriterName)
         WriterName = WriterName.split(', ') # if there us a comma split the writers into an array
         for w in WriterName:
-            w = re.sub(r" ?\([^)]+\)", "", w) #take said array and remove any text that is in a paretheseis etc. We just wnat the name
             exists = Writer.query.filter_by(name=w).scalar() is not None # checks to see if writer name exists adds then adds it to the db if it doesn't exist
             if not exists:
                 writer_data = Writer(w)
@@ -49,15 +53,28 @@ def add_writer_data():
             db.session.add(writer_data)
             db.session().commit()
 
-def add_directors(): #same process as actors
+def add_directors(): #same process as writers
     json_data = r.json()
-    if json_data['Director'] != 'N/A':
-        director_name = str(json_data['Director'])
-        exists = Directors.query.filter_by(name=director_name).scalar() is not None
-        if not exists:
-            director_data = Directors(director_name)
-            db.session.add(director_data)
-            db.session.commit()
+    Director_names = str(json_data['Director'])
+    result = Director_names.find(',')
+    if result != -1:
+        Director_names = Director_names.split(', ')
+        for d in Director_names:
+            d = re.sub(r" ?\([^)]+\)", "", d)
+            exists = Directors.query.filter_by(name=d).scalar() is not None
+            if not exists:
+                director_data = Directors(d)
+                db.session.add(director_data)
+                db.session.commit()
+    else:
+        if json_data['Director'] != 'N/A':
+            director_name = str(json_data['Director'])
+            exists = Directors.query.filter_by(name=director_name).scalar() is not None
+            if not exists:
+                director_data = Directors(director_name)
+                db.session.add(director_data)
+                db.session.commit()
+           
 
 def add_studio():#same process as actors
     json_data = r.json()
@@ -116,10 +133,8 @@ def add_mov():
             rel_dt = datetime.datetime.strptime(rel_dt, '%d %b %Y')
 
         plot = str(json_data['Plot'])
-        dirName = json_data['Director']
-        DirectorsID = Directors.query.filter_by(name=dirName).first()
         
-        movie_data = Movie(title, year, runtime, rel_dt.date(), plot, DirectorsID.id)
+        movie_data = Movie(title, year, runtime, rel_dt.date(), plot)
         db.session.add(movie_data)
         db.session.commit()
 
@@ -183,6 +198,7 @@ def add_country():
     json_data = r.json()
     if json_data['Country']!='N/A':
         country_names = str(json_data['Country'])
+        print (country_names, file=sys.stdout)
         result = country_names.find(',')
         if result != -1:
             country_names = country_names.split(', ')
@@ -192,12 +208,12 @@ def add_country():
                     country_data = Release_Country(cn)
                     db.session.add(country_data)
                     db.session.commit()
-    else:
-        exists = Release_Country.query.filter_by(name=country_names).scalar() is not None
-        if not exists:
-            country_data = Release_Country(country_names)
-            db.session.add(country_data)
-            db.session().commit()
+        else:   
+            exists = Release_Country.query.filter_by(name=country_names).scalar() is not None
+            if not exists:
+                country_data = Release_Country(country_names)
+                db.session.add(country_data)
+                db.session().commit()
 
 def add_movie_country():
     json_data = r.json()
@@ -238,7 +254,7 @@ def add_language():
         else:
             exists = Lang.query.filter_by(language=lang_names).scalar() is not None
             if not exists:
-                lang_data = Lang(lang_names)
+                lang_data = Lang(lang_names)      
                 db.session.add(lang_data)
                 db.session().commit()
 
@@ -313,9 +329,12 @@ def add_movie_writer():
     result = WriterName.find(',')
     MovieID = Movie.query.with_entities(Movie.id).filter_by(title=json_data['Title'], year=json_data['Year'])
     if result != -1:
+        WriterName = re.sub(r" ?\([^)]+\)", "", WriterName)
+        nb_rep = 1
+        while (nb_rep):
+            (WriterName, nb_rep) = re.subn(r'\([^()]*\)', '', WriterName)
         WriterName = WriterName.split(", ")
         for w in WriterName:
-            w = re.sub(r" ?\([^)]+\)", "", w)
             WriterID = Writer.query.with_entities(Writer.id).filter_by(name=w)
             exists = Movie_Writers.query.filter_by(writer_id=WriterID, movies_id=MovieID).scalar() is not None
             if not exists:
@@ -355,6 +374,29 @@ def add_movie_studio():
                 db.session.add(studio_data)
                 db.session.commit()
 
+def add_movie_directors():
+    json_data = r.json()
+    Director_names = str(json_data['Director'])
+    result = Director_names.find(',')
+    MovieID = Movie.query.with_entities(Movie.id).filter_by(title=json_data['Title'], year=json_data['Year'])
+    if result != -1:
+        Director_names = Director_names.split(', ')
+        for d in Director_names:
+            d = re.sub(r" ?\([^)]+\)", "", d)
+            DirectorID = Directors.query.filter_by(name=d).first()
+            exists = Movie_Directors.query.filter_by(director_id=DirectorID.id, movies_id=MovieID).scalar() is not None
+            if not exists:
+                director_data = Movie_Directors(MovieID, DirectorID.id)
+                db.session.add(director_data)
+                db.session.commit()
+    else:
+        if json_data['Director'] != 'N/A':
+            DirectorID = Directors.query.filter_by(name=Director_names).first()
+            exists = Movie_Directors.query.filter_by(director_id=DirectorID.id, movies_id=MovieID).scalar() is not None
+            if not exists:
+                director_data =  Movie_Directors(MovieID, DirectorID.id)
+                db.session.add(director_data)
+                db.session.commit()
 
 #rest api paths / is basically useless, but /movie takes in two methods get and post. Post methods trigger population of the table after pulling data from the api, get methods pulls the data from the api and that's it
 @app.route('/')
@@ -363,8 +405,9 @@ def index():
 
 @app.route('/movie', methods=['GET'])
 def get_movie():
-    title = str(json_data['Title'])
-    year = str(json_data['Year'])
+    global r
+    title = json_data['Title']
+    year = json_data['Year']
     title = urllib.parse.quote(title)
     r = requests.get(f'https://www.omdbapi.com/?t={title}&y={year}&tomatoes=True&apikey=e165dea8')
     data = r.json()
@@ -377,10 +420,10 @@ def add_Movie():
     global json_data
     global r
     json_data = request.get_json()
-    title = str(json_data['Title'])
-    year = str(json_data['Year'])
+    title = json_data['Title']
+    year = json_data['Year']
     title = urllib.parse.quote(title)
-    r = requests.get(f'https://www.omdbapi.com/?t={title}&y={year}&tomatoes=True&apikey=e165dea8')
+    r = requests.post(f'https://www.omdbapi.com/?t={title}&y={year}&tomatoes=True&apikey=e165dea8')
     add_directors()
     add_studio()
     add_actor_data()
@@ -396,7 +439,8 @@ def add_Movie():
     add_movie_country()
     add_movie_lang()
     add_movie_studio()
-    return jsonify(r.json()), 201
+    add_movie_directors()
+    return (''), 204
   
 if __name__ == '__main__':
     app.run(debug=True)

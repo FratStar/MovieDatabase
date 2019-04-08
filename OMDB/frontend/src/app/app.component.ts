@@ -9,8 +9,6 @@ import { MovieApiService } from './movie/movie-api-service';
   styleUrls: ['./app.component.scss']
 })
 export class AppComponent implements OnInit {
-
-  constructor(private movieapiservice: MovieApiService ){}
   
   ngOnInit(){}
 }

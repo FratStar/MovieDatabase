@@ -10,7 +10,6 @@ class Movie(db.Model):
     runtime = db.Column(db.Integer, nullable=False)
     mov_rel_dt = db.Column(db.Date, nullable=False)
     mov_plot = db.Column(db.String(450))
-    director_id = db.Column(db.Integer, db.ForeignKey('directors.id'), nullable=False)
     ratings = db.relationship('Ratings', backref='Movie', lazy=True)
     Cast = db.relationship('Actors', secondary='movie_cast' )
     mov_writers = db.relationship('Writer', secondary='movie_writers')
@@ -18,20 +17,20 @@ class Movie(db.Model):
     languages = db.relationship('Lang', secondary='movie_lang')
     countries = db.relationship('Release_Country', secondary = 'movie_release_country')
     movie_std = db.relationship('Studio', secondary = 'movie_studios')
-    def __init__(self, title, year, runtime, mov_rel_dt, mov_plot, director_id):
+    movie_director = db.relationship('Directors', secondary = 'movie_directors')
+    def __init__(self, title, year, runtime, mov_rel_dt, mov_plot):
         self.title = title
         self.year = year
         self.runtime = runtime
         self.mov_rel_dt = mov_rel_dt
         self.mov_plot = mov_plot
-        self.director_id = director_id
         
 
 class Directors(db.Model):
     __tablename__ = 'directors'
     id = db.Column(db.Integer, primary_key=True)
     name = db.Column(db.String(50), unique=True, nullable=False)
-    moviesd = db.relationship('Movie', backref='directors',lazy='dynamic')
+    moviesd = db.relationship('Movie', secondary='movie_directors')
     def __init__(self, name):
         self.name = name
 
@@ -89,6 +88,16 @@ class Movie_Cast(db.Model):
         self.movies_id = movies_id
         self.actors_id = actors_id
 
+class Movie_Directors(db.Model):
+    __tablename__ = 'movie_directors'
+    id = db.Column(db.Integer, primary_key=True)
+    movies_id = db.Column(db.Integer, db.ForeignKey('movies.id'))
+    director_id = db.Column(db.Integer, db.ForeignKey('directors.id'))
+    movie = db.relationship(Movie, backref=db.backref('movie_directors', cascade="all, delete-orphan"))
+    director = db.relationship(Directors, backref=db.backref('movie_directors', cascade="all, delete-orphan"))
+    def __init__(self, movies_id, director_id):
+        self.movies_id = movies_id
+        self.director_id = director_id
 
 class Movie_Writers(db.Model):
     __tablename__ = 'movie_writers'
